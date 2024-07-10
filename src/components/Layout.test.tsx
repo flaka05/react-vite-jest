@@ -1,5 +1,4 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Layout from './Layout';
 
@@ -27,4 +26,4 @@ describe('Layout Component', () => {
     expect(screen.getByText('Accueil')).toBeInTheDocument();
     expect(screen.getByText('À propos')).toBeInTheDocument();
   });
-});
+}); 

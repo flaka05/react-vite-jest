@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import useData from './useData';
 import '@testing-library/jest-dom';
@@ -16,60 +16,57 @@ describe('useData Hook', () => {
   });
 
   it('fetches data on mount', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => useData());
+    const { result } = renderHook(() => useData());
 
     expect(result.current.loading).toBe(true);
     
-    await waitForNextUpdate();
-
-    expect(result.current.loading).toBe(false);
-    expect(result.current.data).toEqual(mockData);
-    expect(result.current.error).toBeNull();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.data).toEqual(mockData));
+    await waitFor(() => expect(result.current.error).toBeNull());
   });
 
   it('handles fetch error', async () => {
     (axios.get as jest.Mock).mockRejectedValue(new Error('API Error'));
 
-    const { result, waitForNextUpdate } = renderHook(() => useData());
+    const { result } = renderHook(() => useData());
 
-    await waitForNextUpdate();
-
-    expect(result.current.loading).toBe(false);
-    expect(result.current.data).toEqual([]);
-    expect(result.current.error).toBe('Une erreur est survenue lors de la récupération des données.');
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.data).toEqual([]));
+    await waitFor(() => expect(result.current.error).toBe('Une erreur est survenue lors de la récupération des données.'));
   });
 
   it('updates an item', async () => {
     (axios.put as jest.Mock).mockResolvedValue({ data: { ...mockData[0], name: 'Updated John' } });
 
-    const { result, waitForNextUpdate } = renderHook(() => useData());
-    
-    await waitForNextUpdate();
+    const { result } = renderHook(() => useData());
 
-    act(() => {
-      result.current.updateItem(1, { name: 'Updated John' });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.updateItem(1, { name: 'Updated John' });
     });
 
-    await waitForNextUpdate();
+  
 
-    expect(result.current.data[0].name).toBe('Updated John');
+    await waitFor(() => {
+      expect(result.current.data[0].name).toBe('Updated John');
+    });
   });
 
   it('handles update error', async () => {
     (axios.put as jest.Mock).mockRejectedValue(new Error('Update Error'));
 
-    const { result, waitForNextUpdate } = renderHook(() => useData());
-    
-    await waitForNextUpdate();
+    const { result } = renderHook(() => useData());
 
-    let updateSuccess;
-    act(() => {
-      updateSuccess = result.current.updateItem(1, { name: 'Updated John' });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let updateSuccess: boolean | undefined;
+
+    await act(async () => {
+      updateSuccess = await result.current.updateItem(1, { name: 'Updated John' });
     });
 
-    await waitForNextUpdate();
-
-    expect(await updateSuccess).toBe(false);
-    expect(result.current.error).toBe('Une erreur est survenue lors de la mise à jour de l\'élément.');
+    await waitFor(() => expect(updateSuccess).toBe(false));
+    await waitFor(() => expect(result.current.error).toBe('Une erreur est survenue lors de la mise à jour de l\'élément.'));
   });
 });

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-interface DataItem {
+type DataItem = {
   id: number;
   name: string;
   email: string;
-}
+};
 
 const useData = () => {
   const [data, setData] = useState<DataItem[]>([]);
@@ -13,28 +13,28 @@ const useData = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('https://jsonplaceholder.typicode.com/users');
+        setData(response.data);
+        setLoading(false);
+      } catch (error) {
+        setError('Une erreur est survenue lors de la récupération des données.');
+        setLoading(false);
+      }
+    };
+
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  const updateItem = async (id: number, updates: Partial<DataItem>) => {
     try {
-      setLoading(true);
-      const response = await axios.get<DataItem[]>('https://jsonplaceholder.typicode.com/users');
-      setData(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Une erreur est survenue lors de la récupération des données.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateItem = async (id: number, updatedItem: Partial<DataItem>) => {
-    try {
-      const response = await axios.put<DataItem>(`https://jsonplaceholder.typicode.com/users/${id}`, updatedItem);
-      setData(data.map(item => item.id === id ? { ...item, ...response.data } : item));
+      const response = await axios.put(`https://jsonplaceholder.typicode.com/users/${id}`, updates);
+      setData(prevData =>
+        prevData.map(item => (item.id === id ? response.data : item))
+      );
       return true;
-    } catch (err) {
+    } catch (error) {
       setError('Une erreur est survenue lors de la mise à jour de l\'élément.');
       return false;
     }
